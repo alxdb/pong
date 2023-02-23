@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, time::Duration};
 
 use cgmath::{vec3, Matrix4};
 use glium::{
@@ -15,6 +15,7 @@ pub struct Paddle {
     vertex_buffer: VertexBuffer<Vertex>,
     transform: Matrix4<f32>,
     program: Rc<Program>,
+    pub state: PaddleState,
 }
 
 pub enum PaddleSide {
@@ -22,7 +23,16 @@ pub enum PaddleSide {
     Right,
 }
 
+#[derive(PartialEq, Copy, Clone)]
+pub enum PaddleState {
+    MoveUp,
+    MoveDown,
+    DoNothing,
+}
+
 impl Paddle {
+    const VELOCITY: f32 = 1.0;
+
     pub fn new(display: &Display, program: Rc<Program>, side: PaddleSide) -> Self {
         const PADDLE_WIDTH: f32 = 0.05;
         const PADDLE_BUFFER: f32 = 0.025;
@@ -44,6 +54,7 @@ impl Paddle {
             vertex_buffer,
             transform,
             program,
+            state: PaddleState::DoNothing,
         }
     }
 
@@ -61,5 +72,14 @@ impl Paddle {
                 &Default::default(),
             )
             .unwrap()
+    }
+
+    pub fn update(&mut self, delta: &Duration) {
+        let vector = match self.state {
+            PaddleState::MoveUp => vec3(0., Self::VELOCITY * delta.as_secs_f32(), 0.),
+            PaddleState::MoveDown => vec3(0., -Self::VELOCITY * delta.as_secs_f32(), 0.),
+            PaddleState::DoNothing => vec3(0., 0., 0.),
+        };
+        self.transform = Matrix4::from_translation(vector) * self.transform;
     }
 }

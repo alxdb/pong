@@ -1,19 +1,20 @@
-mod paddle;
-mod shaders;
-
-use std::rc::Rc;
+use std::{rc::Rc, time::Instant};
 
 use glium::{
     glutin::{
         dpi::LogicalSize,
-        event::{Event, WindowEvent},
+        event::{ElementState, Event, VirtualKeyCode, WindowEvent},
         event_loop::EventLoop,
         window::WindowBuilder,
         ContextBuilder,
     },
-    Display, Frame, Program, Surface,
+    Display, Program, Surface,
 };
-use paddle::{Paddle, PaddleSide};
+
+mod paddle;
+mod shaders;
+
+use paddle::{Paddle, PaddleSide, PaddleState};
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -34,18 +35,45 @@ fn main() {
         .unwrap(),
     );
 
-    let left_paddle = Paddle::new(&display, program.clone(), PaddleSide::Left);
+    let mut left_paddle = Paddle::new(&display, program.clone(), PaddleSide::Left);
     let right_paddle = Paddle::new(&display, program, PaddleSide::Right);
 
+    let mut last_updated: Instant = Instant::now();
     event_loop.run(move |event, _, flow| {
         flow.set_poll();
 
         match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => flow.set_exit(),
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => flow.set_exit(),
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if let Some(key) = input.virtual_keycode {
+                        match (key, input.state, left_paddle.state) {
+                            (VirtualKeyCode::W, ElementState::Pressed, PaddleState::DoNothing) => {
+                                left_paddle.state = PaddleState::MoveUp
+                            }
+                            (VirtualKeyCode::W, ElementState::Released, PaddleState::MoveUp) => {
+                                left_paddle.state = PaddleState::DoNothing
+                            }
+                            (VirtualKeyCode::S, ElementState::Pressed, PaddleState::DoNothing) => {
+                                left_paddle.state = PaddleState::MoveDown
+                            }
+                            (VirtualKeyCode::S, ElementState::Released, PaddleState::MoveDown) => {
+                                left_paddle.state = PaddleState::DoNothing
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                _ => (),
+            },
             Event::MainEventsCleared => {
+                // update
+                let delta = last_updated.elapsed();
+                left_paddle.update(&delta);
+                // do updates
+                last_updated = Instant::now();
+
+                // render
                 let mut frame = display.draw();
                 frame.clear_color(0., 0., 0., 1.);
                 left_paddle.render(&mut frame);
