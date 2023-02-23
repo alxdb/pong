@@ -9,7 +9,7 @@ use glium::{
 };
 use itertools::Itertools;
 
-use crate::{shaders::Vertex, Renderable};
+use crate::shaders::Vertex;
 
 pub struct Paddle {
     vertex_buffer: VertexBuffer<Vertex>,
@@ -46,10 +46,8 @@ impl Paddle {
             program,
         }
     }
-}
 
-impl Renderable for Paddle {
-    fn render(&self, frame: &mut Frame) {
+    pub fn render(&self, frame: &mut Frame) {
         let uniforms: glium::uniforms::UniformsStorage<[[f32; 4]; 4], EmptyUniforms> = uniform! {
             transform: self.transform.into(),
         };

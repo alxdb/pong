@@ -1,3 +1,6 @@
+mod paddle;
+mod shaders;
+
 use std::rc::Rc;
 
 use glium::{
@@ -11,13 +14,6 @@ use glium::{
     Display, Frame, Program, Surface,
 };
 use paddle::{Paddle, PaddleSide};
-
-mod paddle;
-mod shaders;
-
-trait Renderable {
-    fn render(&self, frame: &mut Frame);
-}
 
 fn main() {
     let event_loop = EventLoop::new();
