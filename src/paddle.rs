@@ -32,12 +32,11 @@ pub enum PaddleState {
 
 impl Paddle {
     const VELOCITY: f32 = 1.0;
+    const WIDTH: f32 = 0.05;
+    const PADDING: f32 = 0.025;
+    const HEIGHT: f32 = 0.4;
 
     pub fn new(display: &Display, program: Rc<Program>, side: PaddleSide) -> Self {
-        const PADDLE_WIDTH: f32 = 0.05;
-        const PADDLE_BUFFER: f32 = 0.025;
-        const PADDLE_HEIGHT: f32 = 0.4;
-
         let positions = [1., -1.]
             .into_iter()
             .cartesian_product([1., -1.])
@@ -46,9 +45,9 @@ impl Paddle {
         let vertex_buffer = VertexBuffer::new(display, &vertices).unwrap();
 
         let transform = Matrix4::from_translation(match side {
-            PaddleSide::Left => vec3(-1. + PADDLE_WIDTH + PADDLE_BUFFER, 0., 0.),
-            PaddleSide::Right => vec3(1. - PADDLE_WIDTH - PADDLE_BUFFER, 0., 0.),
-        }) * Matrix4::from_nonuniform_scale(PADDLE_WIDTH, PADDLE_HEIGHT, 1.);
+            PaddleSide::Left => vec3(-1. + Paddle::WIDTH + Paddle::PADDING, 0., 0.),
+            PaddleSide::Right => vec3(1. - Paddle::WIDTH - Paddle::PADDING, 0., 0.),
+        }) * Matrix4::from_nonuniform_scale(Paddle::WIDTH, Paddle::HEIGHT, 1.);
 
         Paddle {
             vertex_buffer,
