@@ -5,4 +5,10 @@ pub struct Vertex {
     pub position: [f32; 4],
 }
 
+impl Vertex {
+    pub fn new(position: [f32; 4]) -> Self {
+        Vertex { position }
+    }
+}
+
 implement_vertex!(Vertex, position);
