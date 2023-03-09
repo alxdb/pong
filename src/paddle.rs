@@ -7,7 +7,7 @@ use glium::{
     uniforms::EmptyUniforms,
     Display, Frame, Program, Surface, VertexBuffer,
 };
-use itertools::Itertools;
+use itertools::{iproduct, Itertools};
 
 use crate::shaders::Vertex;
 
@@ -37,17 +37,14 @@ impl Paddle {
     const HEIGHT: f32 = 0.4;
 
     pub fn new(display: &Display, program: Rc<Program>, side: PaddleSide) -> Self {
-        let positions = [1., -1.]
-            .into_iter()
-            .cartesian_product([1., -1.])
-            .map(|(a, b)| [a, b, 0., 1.]);
+        let positions = iproduct!([1., -1.], [1., -1.]).map(|(a, b)| [a, b, 0., 1.]);
         let vertices = positions.map(Vertex::new).collect_vec();
         let vertex_buffer = VertexBuffer::new(display, &vertices).unwrap();
 
         let transform = Matrix4::from_translation(match side {
-            PaddleSide::Left => vec3(-1. + Paddle::WIDTH + Paddle::PADDING, 0., 0.),
-            PaddleSide::Right => vec3(1. - Paddle::WIDTH - Paddle::PADDING, 0., 0.),
-        }) * Matrix4::from_nonuniform_scale(Paddle::WIDTH, Paddle::HEIGHT, 1.);
+            PaddleSide::Left => vec3(-1. + Self::WIDTH + Self::PADDING, 0., 0.),
+            PaddleSide::Right => vec3(1. - Self::WIDTH - Self::PADDING, 0., 0.),
+        }) * Matrix4::from_nonuniform_scale(Self::WIDTH, Self::HEIGHT, 1.);
 
         Paddle {
             vertex_buffer,

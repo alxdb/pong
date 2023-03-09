@@ -4,17 +4,17 @@ use glium::{
     glutin::{
         dpi::LogicalSize,
         event::{ElementState, Event, VirtualKeyCode, WindowEvent},
-        event_loop::EventLoop,
+        event_loop::{ControlFlow, EventLoop},
         window::WindowBuilder,
         ContextBuilder,
     },
     Display, Program, Surface,
 };
 
-mod paddle;
-mod shaders;
-
-use paddle::{Paddle, PaddleSide, PaddleState};
+use pong::{
+    ball::Ball,
+    paddle::{Paddle, PaddleSide, PaddleState},
+};
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -36,7 +36,8 @@ fn main() {
     );
 
     let mut left_paddle = Paddle::new(&display, program.clone(), PaddleSide::Left);
-    let right_paddle = Paddle::new(&display, program, PaddleSide::Right);
+    let right_paddle = Paddle::new(&display, program.clone(), PaddleSide::Right);
+    let ball = Ball::new(&display, program);
 
     let mut last_updated: Instant = Instant::now();
     event_loop.run(move |event, _, flow| {
@@ -78,6 +79,7 @@ fn main() {
                 frame.clear_color(0., 0., 0., 1.);
                 left_paddle.render(&mut frame);
                 right_paddle.render(&mut frame);
+                ball.render(&mut frame);
                 frame.finish().unwrap();
             }
             _ => (),
