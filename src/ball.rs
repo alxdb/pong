@@ -22,9 +22,8 @@ impl Ball {
 
     pub fn new(display: &Display, program: Rc<Program>) -> Self {
         let center = [0.0, 0.0];
-
-        let circle_points = (0..Self::N_SEGMENTS)
-            .map(|n| TAU / n as f32)
+        let circle_points = (0..Self::N_SEGMENTS + 1)
+            .map(|n| (TAU / Self::N_SEGMENTS as f32) * n as f32)
             .map(|theta| [f32::cos(theta), f32::sin(theta)]);
 
         let vertices = intersperse(circle_points, center)
