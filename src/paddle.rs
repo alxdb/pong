@@ -28,6 +28,7 @@ impl Paddle {
     const WIDTH: f32 = 0.15;
     const PADDING: f32 = 0.05;
     const HEIGHT: f32 = 1.0;
+    const BOUNDS: f32 = Self::HEIGHT / 2.;
 
     pub fn new(display: &Display, program: Rc<Program>, side: PaddleSide) -> Self {
         let positions = iproduct!([0.5, -0.5], [0.5, -0.5]).map(|(a, b)| [a, b]);
@@ -49,11 +50,13 @@ impl Paddle {
 
     pub fn update(&mut self, delta: &Duration) {
         let velocity = match self.state {
-            PaddleState::MoveUp => vec3(0., Self::VELOCITY * delta.as_secs_f32(), 0.),
-            PaddleState::MoveDown => vec3(0., -Self::VELOCITY * delta.as_secs_f32(), 0.),
-            PaddleState::DoNothing => vec3(0., 0., 0.),
+            PaddleState::MoveUp => Self::VELOCITY * delta.as_secs_f32(),
+            PaddleState::MoveDown => -Self::VELOCITY * delta.as_secs_f32(),
+            PaddleState::DoNothing => 0.,
         };
-        self.renderdata.transform.translation += velocity;
+
+        let y = &mut self.renderdata.transform.translation.y;
+        *y = (*y + velocity).clamp(-Self::BOUNDS, Self::BOUNDS);
     }
 
     pub fn render(&self, frame: &mut Frame) {
