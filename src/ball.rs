@@ -1,10 +1,10 @@
 use std::{f32::consts::TAU, rc::Rc};
 
-use cgmath::Matrix4;
-use glium::{Display, Frame, Program, VertexBuffer};
-use itertools::{intersperse, Itertools};
+use cgmath::{num_traits::zero, vec3};
+use glium::{Display, Frame, Program};
+use itertools::intersperse;
 
-use crate::{shaders::Vertex, RenderData};
+use crate::{RenderData, Transform};
 
 pub struct Ball {
     renderdata: RenderData,
@@ -22,23 +22,18 @@ impl Ball {
             .map(|theta| [f32::cos(theta), f32::sin(theta)]);
         let positions = intersperse(positions, center);
 
-        let vertices = positions
-            .map(|[a, b]| [a, b, 0., 1.])
-            .map(Vertex::new)
-            .collect_vec();
-        let vertex_buffer = VertexBuffer::new(display, &vertices).unwrap();
-
-        let (width, height): (f32, f32) = display.gl_window().window().inner_size().into();
-        let ratio = width / height;
-        let transform =
-            cgmath::ortho(-ratio, ratio, 1., -1., 0., 1.) * Matrix4::from_scale(Self::SCALE);
+        let scale = vec3(Self::SCALE, Self::SCALE, Self::SCALE);
 
         Ball {
-            renderdata: RenderData {
-                vertex_buffer,
-                transform,
+            renderdata: RenderData::new(
+                display,
                 program,
-            },
+                positions,
+                Transform {
+                    translation: zero(),
+                    scale,
+                },
+            ),
         }
     }
 

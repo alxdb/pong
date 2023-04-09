@@ -1,4 +1,7 @@
-use glium::implement_vertex;
+use glium::{
+    implement_vertex,
+    uniforms::{EmptyUniforms, UniformsStorage},
+};
 
 #[derive(Copy, Clone)]
 pub struct Vertex {
@@ -12,3 +15,6 @@ impl Vertex {
 }
 
 implement_vertex!(Vertex, position);
+
+pub type Uniforms<'a, 'b> =
+    UniformsStorage<'a, [[f32; 4]; 4], UniformsStorage<'b, [[f32; 4]; 4], EmptyUniforms>>;
