@@ -4,7 +4,7 @@ use glium::{
     glutin::{
         dpi::LogicalSize,
         event::{ElementState, Event, VirtualKeyCode, WindowEvent},
-        event_loop::{ControlFlow, EventLoop},
+        event_loop::EventLoop,
         window::WindowBuilder,
         ContextBuilder,
     },
