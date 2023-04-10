@@ -18,7 +18,7 @@ pub struct Ball {
 impl Ball {
     const N_SEGMENTS: usize = 128;
     const SCALE: f32 = 0.4;
-    const INITIAL_VELOCITY: Vector2<f32> = vec2(10., 10.);
+    const INITIAL_VELOCITY: Vector2<f32> = vec2(2., 1.4);
 
     pub fn new(display: &Display, program: Rc<Program>) -> Self {
         let center = [0.0, 0.0];
