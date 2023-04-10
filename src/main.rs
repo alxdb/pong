@@ -37,7 +37,7 @@ fn main() {
 
     let mut left_paddle = Paddle::new(&display, program.clone(), PaddleSide::Left);
     let right_paddle = Paddle::new(&display, program.clone(), PaddleSide::Right);
-    let ball = Ball::new(&display, program);
+    let mut ball = Ball::new(&display, program);
 
     let mut last_updated: Instant = Instant::now();
     event_loop.run(move |event, _, flow| {
@@ -71,6 +71,7 @@ fn main() {
                 // update
                 let delta = last_updated.elapsed();
                 left_paddle.update(&delta);
+                ball.update(&delta);
                 // do updates
                 last_updated = Instant::now();
 

@@ -1,13 +1,17 @@
 use std::{rc::Rc, time::Duration};
 
-use cgmath::vec3;
+use cgmath::vec2;
 use glium::{Display, Frame, Program};
 use itertools::iproduct;
 
-use crate::{get_display_ratio, RenderData, Transform};
+use crate::{
+    get_display_ratio,
+    renderdata::{RenderData, Transform},
+};
 
 pub struct Paddle {
     renderdata: RenderData,
+    transform: Transform,
     pub state: PaddleState,
 }
 
@@ -36,14 +40,15 @@ impl Paddle {
         let ratio = get_display_ratio(display);
         let transform = Transform {
             translation: match side {
-                PaddleSide::Left => vec3(-ratio + (Self::WIDTH / 2.) + Self::PADDING, 0., 0.),
-                PaddleSide::Right => vec3(ratio - (Self::WIDTH / 2.) - Self::PADDING, 0., 0.),
+                PaddleSide::Left => vec2(-ratio + Self::WIDTH / 2. + Self::PADDING, 0.),
+                PaddleSide::Right => vec2(ratio - Self::WIDTH / 2. - Self::PADDING, 0.),
             },
-            scale: vec3(Self::WIDTH, Self::HEIGHT, 1.),
+            scale: vec2(Self::WIDTH, Self::HEIGHT),
         };
 
         Paddle {
-            renderdata: RenderData::new(display, program, positions, transform),
+            renderdata: RenderData::new(display, program, positions),
+            transform,
             state: PaddleState::DoNothing,
         }
     }
@@ -55,11 +60,11 @@ impl Paddle {
             PaddleState::DoNothing => 0.,
         };
 
-        let y = &mut self.renderdata.transform.translation.y;
-        *y = (*y + velocity).clamp(-Self::BOUNDS, Self::BOUNDS);
+        self.transform.translation.y =
+            (self.transform.translation.y + velocity).clamp(-Self::BOUNDS, Self::BOUNDS);
     }
 
     pub fn render(&self, frame: &mut Frame) {
-        self.renderdata.render(frame)
+        self.renderdata.render(frame, self.transform)
     }
 }
