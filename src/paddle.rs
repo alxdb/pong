@@ -1,8 +1,8 @@
 use std::{rc::Rc, time::Duration};
 
-use cgmath::vec2;
 use glium::{Display, Frame, Program};
 use itertools::iproduct;
+use nalgebra::Vector2;
 
 use crate::{
     get_display_ratio,
@@ -40,10 +40,10 @@ impl Paddle {
         let ratio = get_display_ratio(display);
         let transform = Transform {
             translation: match side {
-                PaddleSide::Left => vec2(-ratio + Self::WIDTH / 2. + Self::PADDING, 0.),
-                PaddleSide::Right => vec2(ratio - Self::WIDTH / 2. - Self::PADDING, 0.),
+                PaddleSide::Left => Vector2::new(-ratio + Self::WIDTH / 2. + Self::PADDING, 0.),
+                PaddleSide::Right => Vector2::new(ratio - Self::WIDTH / 2. - Self::PADDING, 0.),
             },
-            scale: vec2(Self::WIDTH, Self::HEIGHT),
+            scale: Vector2::new(Self::WIDTH, Self::HEIGHT),
         };
 
         Paddle {

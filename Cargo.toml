@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 glium = "0.32.1"
-cgmath = "0.18.0"
+nalgebra = "0.32.2"
 itertools = "0.10.5"

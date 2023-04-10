@@ -4,12 +4,12 @@ use crate::{
     create_projection,
     shaders::{Uniforms, Vertex},
 };
-use cgmath::{vec3, Matrix4, Vector2};
 use glium::{
     index::{NoIndices, PrimitiveType},
     uniform, Display, Frame, Program, Surface, VertexBuffer,
 };
 use itertools::Itertools;
+use nalgebra::{Matrix4, Vector2, Vector3};
 
 pub struct RenderData {
     vertex_buffer: VertexBuffer<Vertex>,
@@ -61,9 +61,16 @@ pub struct Transform {
 
 impl From<Transform> for Matrix4<f32> {
     fn from(transform: Transform) -> Self {
-        let translation =
-            Matrix4::from_translation(vec3(transform.translation.x, transform.translation.y, 0.0));
-        let scale = Matrix4::from_nonuniform_scale(transform.scale.x, transform.scale.y, 1.0);
+        let translation = Matrix4::new_translation(&Vector3::new(
+            transform.translation.x,
+            transform.translation.y,
+            0.0,
+        ));
+        let scale = Matrix4::new_nonuniform_scaling(&Vector3::new(
+            transform.scale.x,
+            transform.scale.y,
+            1.0,
+        ));
         translation * scale
     }
 }
