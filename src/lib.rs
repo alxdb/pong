@@ -1,9 +1,10 @@
 use glium::Display;
-use nalgebra::Matrix4;
+use nalgebra::{Matrix4, Orthographic3};
 
 pub mod ball;
 pub mod paddle;
 
+pub(crate) mod collider;
 pub(crate) mod renderdata;
 pub(crate) mod shaders;
 

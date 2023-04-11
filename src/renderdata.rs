@@ -9,7 +9,7 @@ use glium::{
     uniform, Display, Frame, Program, Surface, VertexBuffer,
 };
 use itertools::Itertools;
-use nalgebra::{Matrix4, Vector2, Vector3};
+use nalgebra::{Matrix4, Vector2};
 
 pub struct RenderData {
     vertex_buffer: VertexBuffer<Vertex>,
@@ -35,7 +35,7 @@ impl RenderData {
         }
     }
 
-    pub fn render(&self, frame: &mut Frame, transform: Transform) {
+    pub fn render(&self, frame: &mut Frame, transform: &Transform) {
         let uniforms: Uniforms = uniform! {
             projection: self.projection.into(),
             transform: transform.into(),
@@ -59,24 +59,16 @@ pub struct Transform {
     pub scale: Vector2<f32>,
 }
 
-impl From<Transform> for Matrix4<f32> {
-    fn from(transform: Transform) -> Self {
-        let translation = Matrix4::new_translation(&Vector3::new(
-            transform.translation.x,
-            transform.translation.y,
-            0.0,
-        ));
-        let scale = Matrix4::new_nonuniform_scaling(&Vector3::new(
-            transform.scale.x,
-            transform.scale.y,
-            1.0,
-        ));
+impl From<&Transform> for Matrix4<f32> {
+    fn from(transform: &Transform) -> Self {
+        let translation = Matrix4::new_translation(&transform.translation.insert_row(2, 0.0));
+        let scale = Matrix4::new_nonuniform_scaling(&transform.scale.insert_row(2, 1.0));
         translation * scale
     }
 }
 
-impl From<Transform> for [[f32; 4]; 4] {
-    fn from(transform: Transform) -> Self {
+impl From<&Transform> for [[f32; 4]; 4] {
+    fn from(transform: &Transform) -> Self {
         Into::<Matrix4<f32>>::into(transform).into()
     }
 }

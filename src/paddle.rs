@@ -5,13 +5,15 @@ use itertools::iproduct;
 use nalgebra::Vector2;
 
 use crate::{
+    collider::PaddleCollider,
     get_display_ratio,
     renderdata::{RenderData, Transform},
 };
 
 pub struct Paddle {
     renderdata: RenderData,
-    transform: Transform,
+    collider: PaddleCollider,
+    // transform: Transform,
     pub state: PaddleState,
 }
 
@@ -48,23 +50,16 @@ impl Paddle {
 
         Paddle {
             renderdata: RenderData::new(display, program, positions),
-            transform,
+            collider: PaddleCollider::new(Self::VELOCITY, transform, display),
             state: PaddleState::DoNothing,
         }
     }
 
     pub fn update(&mut self, delta: &Duration) {
-        let velocity = match self.state {
-            PaddleState::MoveUp => Self::VELOCITY * delta.as_secs_f32(),
-            PaddleState::MoveDown => -Self::VELOCITY * delta.as_secs_f32(),
-            PaddleState::DoNothing => 0.,
-        };
-
-        self.transform.translation.y =
-            (self.transform.translation.y + velocity).clamp(-Self::BOUNDS, Self::BOUNDS);
+        self.collider.update(delta, &self.state)
     }
 
     pub fn render(&self, frame: &mut Frame) {
-        self.renderdata.render(frame, self.transform)
+        self.renderdata.render(frame, self.collider.transform())
     }
 }

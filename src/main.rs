@@ -71,7 +71,7 @@ fn main() {
                 // update
                 let delta = last_updated.elapsed();
                 left_paddle.update(&delta);
-                ball.update(&delta);
+                ball.update(&delta, &[&right_paddle]);
                 // do updates
                 last_updated = Instant::now();
 
