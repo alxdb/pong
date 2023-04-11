@@ -7,6 +7,7 @@ pub mod paddle;
 pub(crate) mod collider;
 pub(crate) mod renderdata;
 pub(crate) mod shaders;
+pub(crate) mod transform;
 
 fn get_display_ratio(display: &Display) -> f32 {
     let (width, height) = display.get_framebuffer_dimensions();

@@ -5,15 +5,12 @@ use itertools::iproduct;
 use nalgebra::Vector2;
 
 use crate::{
-    collider::PaddleCollider,
-    get_display_ratio,
-    renderdata::{RenderData, Transform},
+    collider::PaddleCollider, get_display_ratio, renderdata::RenderData, transform::Transform,
 };
 
 pub struct Paddle {
     renderdata: RenderData,
     collider: PaddleCollider,
-    // transform: Transform,
     pub state: PaddleState,
 }
 
@@ -34,7 +31,6 @@ impl Paddle {
     const WIDTH: f32 = 0.15;
     const PADDING: f32 = 0.05;
     const HEIGHT: f32 = 1.0;
-    const BOUNDS: f32 = Self::HEIGHT / 2.;
 
     pub fn new(display: &Display, program: Rc<Program>, side: PaddleSide) -> Self {
         let positions = iproduct!([0.5, -0.5], [0.5, -0.5]).map(|(a, b)| [a, b]);
@@ -50,7 +46,7 @@ impl Paddle {
 
         Paddle {
             renderdata: RenderData::new(display, program, positions),
-            collider: PaddleCollider::new(Self::VELOCITY, transform, display),
+            collider: PaddleCollider::new(Self::VELOCITY, transform, ratio),
             state: PaddleState::DoNothing,
         }
     }
