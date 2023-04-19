@@ -1,5 +1,5 @@
 use glium::Display;
-use nalgebra::{Matrix4, Orthographic3};
+use nalgebra::Matrix4;
 
 pub mod ball;
 pub mod paddle;

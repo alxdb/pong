@@ -1,8 +1,11 @@
 use std::time::Duration;
 
-use nalgebra::Vector2;
+use nalgebra::{zero, Vector2};
 
-use crate::{paddle::PaddleState, transform::Transform};
+use crate::{
+    paddle::{Paddle, PaddleState},
+    transform::Transform,
+};
 
 struct Bounds {
     l: Vector2<f32>,
@@ -21,11 +24,6 @@ impl Bounds {
             h: Vector2::new(x_h, y_h),
         }
     }
-
-    // fn from_display(display: &Display) -> Self {
-    //     let ratio = get_display_ratio(display);
-    //     Self::new(-ratio, ratio, -1., 1.)
-    // }
 
     fn from_transform(transform: &Transform) -> Self {
         Self::new(
@@ -66,6 +64,26 @@ impl BDelta {
 
         Vector2::new(overshoot(self.l.x, self.h.x), overshoot(self.l.y, self.h.y))
     }
+
+    fn clamp_out(&self) -> Vector2<f32> {
+        match (self.l.x, self.h.x, self.l.y, self.h.y) {
+            // lx, ly
+            (lx, hx, ly, hy) if lx < hx && ly < hy && lx < ly => Vector2::new(-lx, 0.),
+            (lx, hx, ly, hy) if lx < hx && ly < hy && ly < lx => Vector2::new(0., -ly),
+            // lx, hy
+            (lx, hx, ly, hy) if lx < hx && ly > hy && lx < hy => Vector2::new(-lx, 0.),
+            (lx, hx, ly, hy) if lx < hx && ly > hy && hy < lx => Vector2::new(0., hy),
+            // hx, hy
+            (lx, hx, ly, hy) if lx > hx && ly > hy && hx < hy => Vector2::new(hx, 0.),
+            (lx, hx, ly, hy) if lx > hx && ly > hy && hy < hx => Vector2::new(0., hy),
+            // hx, ly
+            (lx, hx, ly, hy) if lx > hx && ly < hy && hx < ly => Vector2::new(hx, 0.),
+            (lx, hx, ly, hy) if lx > hx && ly < hy && ly < hx => Vector2::new(0., -ly),
+            // inside
+            (lx, hx, ly, hy) if lx <= 0. || hx <= 0. || ly <= 0. || hy <= 0. => zero(),
+            _ => panic!(),
+        }
+    }
 }
 
 pub struct PaddleCollider {
@@ -103,13 +121,6 @@ impl PaddleCollider {
     }
 }
 
-enum Hit {
-    Top,
-    Bottom,
-    Left,
-    Right,
-}
-
 pub struct BallCollider {
     transform: Transform,
     velocity: Vector2<f32>,
@@ -129,10 +140,16 @@ impl BallCollider {
         &self.transform
     }
 
-    pub fn update(&mut self, delta: &Duration) {
+    pub fn update(&mut self, delta: &Duration, paddles: &[&PaddleCollider]) {
         let t_maybe = self.transform.translation + self.velocity * delta.as_secs_f32();
         let b_delta = self.bounds.delta_transform(&t_maybe, &self.transform.scale);
         let t_delta = b_delta.clamp_in() * 2.;
+
+        for paddle in paddles {
+            let b_delta = Bounds::from_transform(paddle.transform())
+                .delta_transform(&t_maybe, &self.transform.scale);
+        }
+
         self.transform.translation = t_maybe + t_delta;
 
         let v_delta = t_delta.map(|x| if x.abs() > 0. { -1. } else { 1. });

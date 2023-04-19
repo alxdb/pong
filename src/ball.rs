@@ -5,7 +5,10 @@ use itertools::intersperse;
 use nalgebra::{zero, Vector2};
 
 use crate::{
-    collider::BallCollider, get_display_ratio, paddle::Paddle, renderdata::RenderData,
+    collider::{BallCollider, PaddleCollider},
+    get_display_ratio,
+    paddle::Paddle,
+    renderdata::RenderData,
     transform::Transform,
 };
 
@@ -41,8 +44,8 @@ impl Ball {
         }
     }
 
-    pub fn update(&mut self, delta: &Duration, paddles: &[&Paddle]) {
-        self.collider.update(delta);
+    pub fn update(&mut self, delta: &Duration, paddles: &[&PaddleCollider]) {
+        self.collider.update(delta, paddles);
     }
 
     pub fn render(&self, frame: &mut Frame) {
