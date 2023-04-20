@@ -1,4 +1,4 @@
-use std::{rc::Rc, time::Instant};
+use std::time::Instant;
 
 use glium::{
     glutin::{
@@ -8,36 +8,29 @@ use glium::{
         window::WindowBuilder,
         ContextBuilder,
     },
-    Display, Program, Surface,
+    Display, Surface,
 };
 
-use pong::{
-    ball::Ball,
-    paddle::{Paddle, PaddleSide, PaddleState},
-};
+use paddle::{Paddle, PaddleSide, PaddleState};
+use pong::render::RenderProgram;
+
+// pub mod ball;
+pub mod paddle;
 
 fn main() {
-    let event_loop = EventLoop::new();
     let window_builder = WindowBuilder::new()
         .with_resizable(false)
         .with_inner_size(LogicalSize::new(1280.0, 720.0))
         .with_title("Pong");
     let context_builder = ContextBuilder::new().with_vsync(true);
 
+    let event_loop = EventLoop::new();
     let display = Display::new(window_builder, context_builder, &event_loop).unwrap();
-    let program = Rc::new(
-        Program::from_source(
-            &display,
-            include_str!("shaders/vert.glsl"),
-            include_str!("shaders/frag.glsl"),
-            None,
-        )
-        .unwrap(),
-    );
+    let program = RenderProgram::new(&display);
 
-    let mut left_paddle = Paddle::new(&display, program.clone(), PaddleSide::Left);
-    let right_paddle = Paddle::new(&display, program.clone(), PaddleSide::Right);
-    let mut ball = Ball::new(&display, program);
+    let mut left_paddle = Paddle::new(&display, program.projection(), PaddleSide::Left);
+    let right_paddle = Paddle::new(&display, program.projection(), PaddleSide::Right);
+    // let mut ball = Ball::new(&display, program);
 
     let mut last_updated: Instant = Instant::now();
     event_loop.run(move |event, _, flow| {
@@ -70,17 +63,25 @@ fn main() {
             Event::MainEventsCleared => {
                 // update
                 let delta = last_updated.elapsed();
-                left_paddle.update(&delta);
-                ball.update(&delta, &[&right_paddle]);
+                // left_paddle.update(&delta);
+                // ball.update(&delta, &[&right_paddle]);
                 // do updates
                 last_updated = Instant::now();
 
                 // render
                 let mut frame = display.draw();
                 frame.clear_color(0., 0., 0., 1.);
-                left_paddle.render(&mut frame);
-                right_paddle.render(&mut frame);
-                ball.render(&mut frame);
+                program.render(
+                    &mut frame,
+                    &left_paddle.transform(),
+                    left_paddle.renderdata(),
+                );
+                program.render(
+                    &mut frame,
+                    &right_paddle.transform(),
+                    right_paddle.renderdata(),
+                );
+                // ball.render(&mut frame);
                 frame.finish().unwrap();
             }
             _ => (),
