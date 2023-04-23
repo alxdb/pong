@@ -41,6 +41,11 @@ impl RenderData {
     }
 }
 
+pub trait Renderable {
+    fn renderdata(&self) -> &RenderData;
+    fn transform(&self) -> Transform3<f32>;
+}
+
 pub struct RenderProgram {
     program: Program,
     projection: Orthographic3<f32>,
@@ -64,15 +69,15 @@ impl RenderProgram {
         }
     }
 
-    pub fn render(&self, frame: &mut Frame, transform: &Transform3<f32>, renderdata: &RenderData) {
+    pub fn render(&self, frame: &mut Frame, renderable: &impl Renderable) {
         let uniforms: Uniforms = uniform! {
             projection: self.projection.to_homogeneous().into(),
-            transform: transform.to_homogeneous().into(),
+            transform: renderable.transform().to_homogeneous().into(),
         };
 
         frame
             .draw(
-                &renderdata.vertex_buffer,
+                &renderable.renderdata().vertex_buffer,
                 NoIndices(PrimitiveType::TriangleStrip),
                 &self.program,
                 &uniforms,

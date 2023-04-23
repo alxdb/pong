@@ -1,20 +1,13 @@
-use std::{f32::consts::TAU, rc::Rc, time::Duration};
+use std::f32::consts::TAU;
 
-use glium::{Display, Frame, Program};
+use glium::Display;
 use itertools::intersperse;
-use nalgebra::{zero, Vector2};
-
-use crate::{
-    collider::{BallCollider, PaddleCollider},
-    get_display_ratio,
-    paddle::Paddle,
-    renderdata::RenderData,
-    transform::Transform,
-};
+use nalgebra::{zero, Similarity3, Transform3, Vector2};
+use pong::render::{RenderData, Renderable};
 
 pub struct Ball {
     renderdata: RenderData,
-    collider: BallCollider,
+    transform: Similarity3<f32>,
 }
 
 impl Ball {
@@ -22,7 +15,7 @@ impl Ball {
     const SCALE: f32 = 0.4;
     const INITIAL_VELOCITY: Vector2<f32> = Vector2::new(-52.4, 57.3);
 
-    pub fn new(display: &Display, program: Rc<Program>) -> Self {
+    pub fn new(display: &Display) -> Self {
         let center = [0.0, 0.0];
         let radius = 0.5;
         let increment = TAU / Self::N_SEGMENTS as f32;
@@ -31,24 +24,19 @@ impl Ball {
             .map(|theta| [radius * f32::cos(theta), radius * f32::sin(theta)]);
         let positions = intersperse(positions, center);
 
-        let scale = Vector2::from_element(Self::SCALE);
-        let ratio = get_display_ratio(display);
-        let transform = Transform {
-            translation: zero(),
-            scale,
-        };
-
         Ball {
-            renderdata: RenderData::new(display, program, positions),
-            collider: BallCollider::new(Self::INITIAL_VELOCITY, transform, ratio),
+            renderdata: RenderData::new(display, positions),
+            transform: Similarity3::new(zero(), zero(), Self::SCALE),
         }
     }
+}
 
-    pub fn update(&mut self, delta: &Duration, paddles: &[&PaddleCollider]) {
-        self.collider.update(delta, paddles);
+impl Renderable for Ball {
+    fn transform(&self) -> Transform3<f32> {
+        nalgebra::convert(self.transform)
     }
 
-    pub fn render(&self, frame: &mut Frame) {
-        self.renderdata.render(frame, self.collider.transform())
+    fn renderdata(&self) -> &RenderData {
+        &self.renderdata
     }
 }

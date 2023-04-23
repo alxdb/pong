@@ -2,7 +2,7 @@ use glium::Display;
 use itertools::iproduct;
 use nalgebra::{Orthographic3, Scale2, Scale3, Transform3, Translation2, Translation3};
 
-use pong::render::RenderData;
+use pong::render::{RenderData, Renderable};
 
 pub struct Paddle {
     renderdata: RenderData,
@@ -48,12 +48,14 @@ impl Paddle {
             state: PaddleState::DoNothing,
         }
     }
+}
 
-    pub fn renderdata(&self) -> &RenderData {
+impl Renderable for Paddle {
+    fn renderdata(&self) -> &RenderData {
         &self.renderdata
     }
 
-    pub fn transform(&self) -> Transform3<f32> {
+    fn transform(&self) -> Transform3<f32> {
         Transform3::from_matrix_unchecked(
             Translation3::new(self.translation.x, self.translation.y, 0.).to_homogeneous()
                 * Scale3::new(self.scale.x, self.scale.y, 1.).to_homogeneous(),
