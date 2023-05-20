@@ -1,4 +1,9 @@
-use glium::Display;
+use std::time::Duration;
+
+use glium::{
+    glutin::event::{ElementState, KeyboardInput, VirtualKeyCode},
+    Display,
+};
 use itertools::iproduct;
 use nalgebra::{Orthographic3, Scale2, Scale3, Transform3, Translation2, Translation3};
 
@@ -47,6 +52,38 @@ impl Paddle {
             scale: Scale2::new(Self::WIDTH, Self::HEIGHT),
             state: PaddleState::DoNothing,
         }
+    }
+
+    pub fn handle_input(&mut self, input: KeyboardInput) {
+        if let Some(key) = input.virtual_keycode {
+            match (key, input.state, self.state) {
+                (VirtualKeyCode::W, ElementState::Pressed, PaddleState::DoNothing) => {
+                    self.state = PaddleState::MoveUp
+                }
+                (VirtualKeyCode::W, ElementState::Released, PaddleState::MoveUp) => {
+                    self.state = PaddleState::DoNothing
+                }
+                (VirtualKeyCode::S, ElementState::Pressed, PaddleState::DoNothing) => {
+                    self.state = PaddleState::MoveDown
+                }
+                (VirtualKeyCode::S, ElementState::Released, PaddleState::MoveDown) => {
+                    self.state = PaddleState::DoNothing
+                }
+                _ => (),
+            }
+        }
+    }
+
+    pub fn update(&mut self, delta: &Duration, projection: &Orthographic3<f32>) {
+        match self.state {
+            PaddleState::DoNothing => (),
+            PaddleState::MoveUp => self.translation.y += delta.as_secs_f32() * Self::VELOCITY,
+            PaddleState::MoveDown => self.translation.y -= delta.as_secs_f32() * Self::VELOCITY,
+        }
+
+        let bottom = projection.bottom() + (self.scale.y / 2.);
+        let top = projection.top() - (self.scale.y / 2.);
+        self.translation.y = self.translation.y.clamp(bottom, top);
     }
 }
 

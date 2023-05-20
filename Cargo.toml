@@ -7,3 +7,7 @@ edition = "2021"
 glium = "0.32.1"
 nalgebra = "0.32.2"
 itertools = "0.10.5"
+
+[dev-dependencies]
+rstest = "0.17.0"
+proptest = "1.1.0"
