@@ -1,0 +1,13 @@
+[package]
+name = "pong"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+nalgebra = "0.32"
+winit = "0.28"
+wgpu = "0.16"
+env_logger = "0.10"
+log = "0.4"
+async-std = { version = "1.12", features = ["attributes"] }
+bytemuck = { version = "1.13", features = ["derive"] }
