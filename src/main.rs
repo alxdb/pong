@@ -26,7 +26,7 @@ impl Object {
     fn new(renderer: &render::Renderer, body_builder: physics::BodyBuilder) -> Self {
         let body = body_builder.build();
         Self {
-            render_data: renderer.register_render_data(&body.figure().shape),
+            render_data: render::RenderData::new(&renderer, &body.figure().shape),
             body,
         }
     }
@@ -47,8 +47,31 @@ fn main() {
         gl::Display::new(window_builder, context_builder, &event_loop).unwrap(),
     );
 
-    let rect = Object::new(&renderer, physics::BodyBuilder::rect(0.5, 0.5));
-    let mut circle = Object::new(&renderer, physics::BodyBuilder::circle(0.25));
+    let mut rect = Object::new(&renderer, physics::BodyBuilder::rect(0.5, 0.5).mass(1.0));
+    let walls = [
+        Object::new(
+            &renderer,
+            physics::BodyBuilder::rect(100.0, 100.0).position(na::point![101.0, 0.]),
+        ),
+        Object::new(
+            &renderer,
+            physics::BodyBuilder::rect(100.0, 100.0).position(na::point![-101.0, 0.]),
+        ),
+        Object::new(
+            &renderer,
+            physics::BodyBuilder::rect(100.0, 100.0).position(na::point![0., 101.0]),
+        ),
+        Object::new(
+            &renderer,
+            physics::BodyBuilder::rect(100.0, 100.0).position(na::point![0., -101.0]),
+        ),
+    ];
+    let mut circle = Object::new(
+        &renderer,
+        physics::BodyBuilder::circle(0.25)
+            .position(na::point![0.75, 0.75])
+            .velocity(na::vector![-0.2, -0.2]),
+    );
 
     let mut last_updated: Instant = Instant::now();
     event_loop.run(move |event, _, flow| {
@@ -68,16 +91,18 @@ fn main() {
                     }
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    circle.body.set_position(renderer.to_world_coords(position))
+                    // circle.body.set_position(renderer.to_world_coords(position))
                 }
                 _ => (),
             },
             Event::MainEventsCleared => {
                 let delta = last_updated.elapsed();
-                // do updates
-                if circle.body.figure().intersects(rect.body.figure()) {
-                    println!("Intersecting! {}", delta.as_secs_f64());
-                }
+                // for wall in &walls {
+                //     circle.body.collide(&wall.body);
+                // }
+                circle.body.collide(&rect.body);
+                circle.body.update(delta.as_secs_f64());
+
                 last_updated = Instant::now();
 
                 // render

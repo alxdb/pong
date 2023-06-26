@@ -11,7 +11,7 @@ pub struct RenderData {
 }
 
 impl RenderData {
-    fn new(renderer: &Renderer, shape: &Shape) -> Self {
+    pub fn new(renderer: &Renderer, shape: &Shape) -> Self {
         let vertices: Vec<shader::Vertex> = shape
             .positions()
             .into_iter()
@@ -37,10 +37,6 @@ impl Renderer {
     pub fn new(display: gl::Display) -> Self {
         let program = shader::create_program(&display);
         Renderer { display, program }
-    }
-
-    pub fn register_render_data(&self, shape: &Shape) -> RenderData {
-        RenderData::new(&self, shape)
     }
 
     pub fn render(&self, items: &[(&RenderData, &dyn Renderable)]) {

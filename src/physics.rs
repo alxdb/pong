@@ -1,7 +1,6 @@
 use crate::geometry::*;
 
 use nalgebra as na;
-use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Body {
@@ -23,7 +22,7 @@ impl BodyBuilder {
                     shape,
                     center: Default::default(),
                 },
-                mass: Default::default(),
+                mass: 1.0,
                 velocity: Default::default(),
             },
         }
@@ -37,17 +36,23 @@ impl BodyBuilder {
         Self::new(Shape::Circle(Circle { r }))
     }
 
-    pub fn center(mut self, center: na::Point2<f64>) -> Self {
-        self.body.figure.center = center;
+    pub fn position(mut self, position: na::Point2<f64>) -> Self {
+        self.body.figure.center = position;
+        self
+    }
+
+    pub fn mass(mut self, mass: f64) -> Self {
+        self.body.mass = mass;
+        self
+    }
+
+    pub fn velocity(mut self, velocity: na::Vector2<f64>) -> Self {
+        self.body.velocity = velocity;
         self
     }
 
     pub fn build(self) -> Body {
         self.body
-    }
-
-    pub fn build_arc(self) -> Arc<Body> {
-        Arc::new(self.build())
     }
 }
 
@@ -56,12 +61,16 @@ impl Body {
         if self.figure.intersects(&other.figure) {
             // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional
             let distance = self.figure.center - other.figure.center;
+            let velocity = self.velocity - other.velocity;
+            let projection = (velocity.dot(&distance) / distance.dot(&distance)) * distance;
+            println!("distance: {:?}", distance);
+            println!("velocity: {:?}", velocity);
+            println!("projection: {:?}", projection);
 
-            let mass_ratio = (2. * other.mass) / (self.mass + other.mass);
-            let velocity_delta = self.velocity - other.velocity;
-            let magnitude = velocity_delta.dot(&distance) / distance.norm_squared();
-
-            self.velocity -= mass_ratio * magnitude * distance;
+            // let mass_ratio = (2. * other.mass) / (self.mass + other.mass);
+            let mass_ratio = 2.; // mass of other object essentially infinite
+            self.velocity = self.velocity - (mass_ratio * projection);
+            println!("new velocity: {:?}", self.velocity);
         }
     }
 
@@ -69,7 +78,8 @@ impl Body {
         &self.figure
     }
 
-    pub fn set_position(&mut self, position: na::Point2<f64>) {
-        self.figure.center = position;
+    pub fn update(&mut self, delta: f64) {
+        self.figure.center += self.velocity * delta;
+        println!("position: {}", self.figure.center);
     }
 }
