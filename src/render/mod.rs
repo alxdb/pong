@@ -59,7 +59,7 @@ impl Renderer {
 
         self.render_data.iter().for_each(|render_data| {
             let transform = render_data.renderable.transform();
-            let projection = self.projection();
+            let projection = self.projection().to_homogeneous().cast().into();
             frame
                 .draw(
                     &render_data.vertex_buffer,
@@ -74,22 +74,15 @@ impl Renderer {
         frame.finish().unwrap();
     }
 
-    fn projection(&self) -> [[f32; 4]; 4] {
+    pub fn current_scale_factor(&self) -> f64 {
+        self.display.gl_window().window().scale_factor()
+    }
+
+    pub fn projection(&self) -> na::geometry::Orthographic3<f64> {
         let (w, h) = self.display.get_framebuffer_dimensions();
         let zoom = 700.;
-        let w = (w as f32) / zoom;
-        let h = (h as f32) / zoom;
+        let w = (w as f64) / zoom;
+        let h = (h as f64) / zoom;
         na::geometry::Orthographic3::new(-w / 2., w / 2., -h / 2., h / 2., -1., 1.)
-            .to_homogeneous()
-            .into()
-        // if h < w {
-        //     na::geometry::Scale2::new(h as f32 / w as f32, 1.0)
-        //         .to_homogeneous()
-        //         .into()
-        // } else {
-        //     na::geometry::Scale2::new(1.0, w as f32 / h as f32)
-        //         .to_homogeneous()
-        //         .into()
-        // }
     }
 }

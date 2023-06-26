@@ -5,10 +5,9 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Body {
-    center: na::Point2<f64>,
+    figure: Figure,
     mass: f64,
     velocity: na::Vector2<f64>,
-    shape: Shape,
 }
 
 #[derive(Debug, Clone)]
@@ -20,10 +19,12 @@ impl BodyBuilder {
     pub fn new(shape: Shape) -> Self {
         BodyBuilder {
             body: Body {
-                center: Default::default(),
+                figure: Figure {
+                    shape,
+                    center: Default::default(),
+                },
                 mass: Default::default(),
                 velocity: Default::default(),
-                shape,
             },
         }
     }
@@ -37,7 +38,7 @@ impl BodyBuilder {
     }
 
     pub fn center(mut self, center: na::Point2<f64>) -> Self {
-        self.body.center = center;
+        self.body.figure.center = center;
         self
     }
 
@@ -52,31 +53,23 @@ impl BodyBuilder {
 
 impl Body {
     pub fn collide(&mut self, other: &Body) {
-        if self.intersects(other) {
+        if self.figure.intersects(&other.figure) {
             // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional
-            let distance = self.center - other.center;
+            let distance = self.figure.center - other.figure.center;
 
-            self.velocity -= ((2. * other.mass) / (self.mass + other.mass))
-                * ((self.velocity - other.velocity).dot(&distance) / distance.norm_squared())
-                * distance;
+            let mass_ratio = (2. * other.mass) / (self.mass + other.mass);
+            let velocity_delta = self.velocity - other.velocity;
+            let magnitude = velocity_delta.dot(&distance) / distance.norm_squared();
+
+            self.velocity -= mass_ratio * magnitude * distance;
         }
     }
 
-    pub fn intersects(&self, other: &Body) -> bool {
-        match (&self.shape, &other.shape) {
-            (Shape::Rectangle(r1), Shape::Rectangle(r2)) => todo!(),
-            (Shape::Rectangle(r), Shape::Circle(c)) | (Shape::Circle(c), Shape::Rectangle(r)) => {
-                todo!()
-            }
-            (Shape::Circle(c1), Shape::Circle(c2)) => todo!(),
-        }
+    pub fn figure(&self) -> &Figure {
+        &self.figure
     }
 
-    pub fn shape(&self) -> &Shape {
-        &self.shape
-    }
-
-    pub fn translation(&self) -> na::Translation2<f64> {
-        self.center.into()
+    pub fn set_position(&mut self, position: na::Point2<f64>) {
+        self.figure.center = position;
     }
 }
