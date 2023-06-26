@@ -1,6 +1,5 @@
 use std::time::Instant;
 
-use gl::glutin::dpi::LogicalPosition;
 use glium as gl;
 use glium::glutin as glu;
 use nalgebra as na;
@@ -18,27 +17,40 @@ impl render::Renderable for physics::Body {
     }
 }
 
-fn main() {
-    let rect = physics::BodyBuilder::rect(0.5, 0.5).build_arc();
-    let mut circle = physics::BodyBuilder::circle(0.25).build_arc();
+struct Object {
+    pub body: physics::Body,
+    render_data: render::RenderData,
+}
 
+impl Object {
+    fn new(renderer: &render::Renderer, body_builder: physics::BodyBuilder) -> Self {
+        let body = body_builder.build();
+        Self {
+            render_data: renderer.register_render_data(&body.figure().shape),
+            body,
+        }
+    }
+
+    fn to_item(&self) -> (&render::RenderData, &dyn render::Renderable) {
+        (&self.render_data, &self.body)
+    }
+}
+
+fn main() {
     let event_loop = glu::event_loop::EventLoop::new();
     let window_builder = glu::window::WindowBuilder::new()
         .with_inner_size(glu::dpi::LogicalSize::new(1920., 1080.))
         .with_title("Pong");
     let context_builder = glu::ContextBuilder::new().with_vsync(true);
 
-    let renderer = {
-        let mut renderer = render::Renderer::new(
-            gl::Display::new(window_builder, context_builder, &event_loop).unwrap(),
-        );
-        renderer.register_render_data(&rect.figure().shape, rect.clone());
-        renderer.register_render_data(&circle.figure().shape, circle.clone());
-        renderer
-    };
+    let renderer = render::Renderer::new(
+        gl::Display::new(window_builder, context_builder, &event_loop).unwrap(),
+    );
+
+    let rect = Object::new(&renderer, physics::BodyBuilder::rect(0.5, 0.5));
+    let mut circle = Object::new(&renderer, physics::BodyBuilder::circle(0.25));
 
     let mut last_updated: Instant = Instant::now();
-    let mut current_scale_factor: f64 = renderer.current_scale_factor();
     event_loop.run(move |event, _, flow| {
         use glu::event::*;
 
@@ -55,26 +67,21 @@ fn main() {
                         }
                     }
                 }
-                WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
-                    current_scale_factor = scale_factor
-                }
                 WindowEvent::CursorMoved { position, .. } => {
-                    let logical = position.to_logical::<f64>(current_scale_factor);
-                    let screen_point = na::point![logical.x, logical.y, 0.];
-                    let inv_proj = renderer.projection().inverse();
-                    let space_point = inv_proj.transform_point(&screen_point);
-
-                    println!("{}", space_point)
+                    circle.body.set_position(renderer.to_world_coords(position))
                 }
                 _ => (),
             },
             Event::MainEventsCleared => {
-                let _delta = last_updated.elapsed();
+                let delta = last_updated.elapsed();
                 // do updates
+                if circle.body.figure().intersects(rect.body.figure()) {
+                    println!("Intersecting! {}", delta.as_secs_f64());
+                }
                 last_updated = Instant::now();
 
                 // render
-                renderer.render();
+                renderer.render(&[&rect, &circle].map(Object::to_item));
             }
             _ => (),
         }
