@@ -1,4 +1,5 @@
-use super::geometry::Shape;
+use crate::geometry::*;
+
 use nalgebra as na;
 use std::sync::Arc;
 
@@ -28,11 +29,11 @@ impl BodyBuilder {
     }
 
     pub fn rect(w: f64, h: f64) -> Self {
-        Self::new(Shape::Rectangle { w, h })
+        Self::new(Shape::Rectangle(Rectangle { w, h }))
     }
 
     pub fn circle(r: f64) -> Self {
-        Self::new(Shape::Circle { r })
+        Self::new(Shape::Circle(Circle { r }))
     }
 
     pub fn center(mut self, center: na::Point2<f64>) -> Self {
@@ -50,20 +51,6 @@ impl BodyBuilder {
 }
 
 impl Body {
-    pub fn new(
-        center: na::Point2<f64>,
-        mass: f64,
-        velocity: na::Vector2<f64>,
-        shape: Shape,
-    ) -> Self {
-        Body {
-            center,
-            mass,
-            velocity,
-            shape,
-        }
-    }
-
     pub fn collide(&mut self, other: &Body) {
         if self.intersects(other) {
             // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional
@@ -76,7 +63,13 @@ impl Body {
     }
 
     pub fn intersects(&self, other: &Body) -> bool {
-        todo!()
+        match (&self.shape, &other.shape) {
+            (Shape::Rectangle(r1), Shape::Rectangle(r2)) => todo!(),
+            (Shape::Rectangle(r), Shape::Circle(c)) | (Shape::Circle(c), Shape::Rectangle(r)) => {
+                todo!()
+            }
+            (Shape::Circle(c1), Shape::Circle(c2)) => todo!(),
+        }
     }
 
     pub fn shape(&self) -> &Shape {

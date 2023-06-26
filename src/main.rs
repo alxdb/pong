@@ -59,6 +59,9 @@ fn main() {
                         }
                     }
                 }
+                WindowEvent::CursorMoved { position, .. } => {
+                    println!("{}, {}", position.x, position.y)
+                }
                 _ => (),
             },
             Event::MainEventsCleared => {

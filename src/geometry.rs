@@ -1,13 +1,24 @@
 #[derive(Debug, Copy, Clone)]
+pub struct Rectangle {
+    pub w: f64,
+    pub h: f64,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Circle {
+    pub r: f64,
+}
+
+#[derive(Debug, Copy, Clone)]
 pub enum Shape {
-    Rectangle { w: f64, h: f64 },
-    Circle { r: f64 },
+    Rectangle(Rectangle),
+    Circle(Circle),
 }
 
 impl Shape {
     pub fn positions(&self) -> Vec<[f32; 2]> {
         match *self {
-            Shape::Rectangle { w, h } => {
+            Shape::Rectangle(Rectangle { w, h }) => {
                 let w = w as f32;
                 let h = h as f32;
                 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -18,7 +29,7 @@ impl Shape {
                     [-w / 2., -h / 2.],
                 ]
             }
-            Shape::Circle { r } => {
+            Shape::Circle(Circle { r }) => {
                 const SECTIONS: usize = 128;
                 const ANGLE_DELTA: f64 = std::f64::consts::TAU / SECTIONS as f64;
                 let mut points = vec![[0., 0.]]; // start with center
