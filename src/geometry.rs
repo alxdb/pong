@@ -114,7 +114,10 @@ impl Figure {
                 },
             ) => {
                 let [rl, rr, rt, rb] = edges(rect, rect_center);
-                let closest = na::clamp(*circle_center, na::point![rl, rb], na::point![rr, rt]);
+                let closest = na::point![
+                    na::clamp(circle_center.x, rl, rr),
+                    na::clamp(circle_center.y, rb, rt)
+                ];
                 na::distance(circle_center, &closest) <= circle.r
             }
         }
