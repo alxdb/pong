@@ -5,7 +5,7 @@ use nalgebra as na;
 #[derive(Debug, Clone)]
 pub struct Body {
     figure: Figure,
-    mass: f64,
+    mass: Option<f64>,
     velocity: na::Vector2<f64>,
 }
 
@@ -15,25 +15,29 @@ pub struct BodyBuilder {
 }
 
 impl BodyBuilder {
-    pub fn new(shape: Shape) -> Self {
+    pub fn new(shape: Shape, movable: bool) -> Self {
         BodyBuilder {
             body: Body {
                 figure: Figure {
                     shape,
                     center: Default::default(),
                 },
-                mass: 1.0,
+                mass: if movable {
+                    Some(Default::default())
+                } else {
+                    None
+                },
                 velocity: Default::default(),
             },
         }
     }
 
-    pub fn rect(w: f64, h: f64) -> Self {
-        Self::new(Shape::Rectangle(Rectangle { w, h }))
+    pub fn rect(w: f64, h: f64, movable: bool) -> Self {
+        Self::new(Shape::Rectangle(Rectangle { w, h }), movable)
     }
 
-    pub fn circle(r: f64) -> Self {
-        Self::new(Shape::Circle(Circle { r }))
+    pub fn circle(r: f64, movable: bool) -> Self {
+        Self::new(Shape::Circle(Circle { r }), movable)
     }
 
     pub fn position(mut self, position: na::Point2<f64>) -> Self {
@@ -42,7 +46,7 @@ impl BodyBuilder {
     }
 
     pub fn mass(mut self, mass: f64) -> Self {
-        self.body.mass = mass;
+        self.body.mass = Some(mass);
         self
     }
 
@@ -57,23 +61,19 @@ impl BodyBuilder {
 }
 
 impl Body {
-    pub fn collide(&mut self, other: &Body, elastic: bool) {
+    fn collide(&mut self, other: &Body) {
         if self.figure.intersects(&other.figure) {
             // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional
             let distance = self.figure.center - other.figure.center;
             let velocity = self.velocity - other.velocity;
             let projection = (velocity.dot(&distance) / distance.dot(&distance)) * distance;
-            println!("distance: {:?}", distance);
-            println!("velocity: {:?}", velocity);
-            println!("projection: {:?}", projection);
 
-            let mass_ratio = if elastic {
-                (2. * other.mass) / (self.mass + other.mass)
+            let mass_ratio = if let (Some(m1), Some(m2)) = (self.mass, other.mass) {
+                (2. * m2) / (m1 + m2)
             } else {
                 2.
             };
             self.velocity = self.velocity - (mass_ratio * projection);
-            println!("new velocity: {:?}", self.velocity);
         }
     }
 
@@ -81,8 +81,10 @@ impl Body {
         &self.figure
     }
 
-    pub fn update(&mut self, delta: f64) {
+    pub fn update(&mut self, delta: f64, collidables: &[&Body]) {
+        for collidable in collidables {
+            self.collide(&collidable);
+        }
         self.figure.center += self.velocity * delta;
-        println!("position: {}", self.figure.center);
     }
 }
