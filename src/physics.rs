@@ -29,11 +29,11 @@ impl BodyBuilder {
     }
 
     pub fn rect(w: f64, h: f64) -> Self {
-        Self::new(Shape::Rectangle(Rectangle { w, h }))
+        Self::new(Shape::Rectangle { w, h })
     }
 
     pub fn circle(r: f64) -> Self {
-        Self::new(Shape::Circle(Circle { r }))
+        Self::new(Shape::Circle { r })
     }
 
     pub fn position(mut self, position: na::Point2<f64>) -> Self {
