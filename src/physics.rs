@@ -15,29 +15,25 @@ pub struct BodyBuilder {
 }
 
 impl BodyBuilder {
-    pub fn new(shape: Shape, movable: bool) -> Self {
+    pub fn new(shape: Shape) -> Self {
         BodyBuilder {
             body: Body {
                 figure: Figure {
                     shape,
                     center: Default::default(),
                 },
-                mass: if movable {
-                    Some(Default::default())
-                } else {
-                    None
-                },
+                mass: Default::default(),
                 velocity: Default::default(),
             },
         }
     }
 
-    pub fn rect(w: f64, h: f64, movable: bool) -> Self {
-        Self::new(Shape::Rectangle(Rectangle { w, h }), movable)
+    pub fn rect(w: f64, h: f64) -> Self {
+        Self::new(Shape::Rectangle(Rectangle { w, h }))
     }
 
-    pub fn circle(r: f64, movable: bool) -> Self {
-        Self::new(Shape::Circle(Circle { r }), movable)
+    pub fn circle(r: f64) -> Self {
+        Self::new(Shape::Circle(Circle { r }))
     }
 
     pub fn position(mut self, position: na::Point2<f64>) -> Self {

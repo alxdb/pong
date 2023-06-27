@@ -47,10 +47,11 @@ fn main() {
         gl::Display::new(window_builder, context_builder, &event_loop).unwrap(),
     );
 
-    let rect = Object::new(&renderer, physics::BodyBuilder::rect(0.5, 0.5, false));
+    let rect = Object::new(&renderer, physics::BodyBuilder::rect(0.5, 0.5));
     let mut circle = Object::new(
         &renderer,
-        physics::BodyBuilder::circle(0.25, true)
+        physics::BodyBuilder::circle(0.25)
+            .mass(1.0)
             .position(na::point![0.75, 0.75])
             .velocity(na::vector![-0.2, -0.2]),
     );
