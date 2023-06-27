@@ -100,7 +100,7 @@ fn main() {
                 // for wall in &walls {
                 //     circle.body.collide(&wall.body);
                 // }
-                circle.body.collide(&rect.body);
+                circle.body.collide(&rect.body, false);
                 circle.body.update(delta.as_secs_f64());
 
                 last_updated = Instant::now();

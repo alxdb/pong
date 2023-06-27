@@ -57,7 +57,7 @@ impl BodyBuilder {
 }
 
 impl Body {
-    pub fn collide(&mut self, other: &Body) {
+    pub fn collide(&mut self, other: &Body, elastic: bool) {
         if self.figure.intersects(&other.figure) {
             // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional
             let distance = self.figure.center - other.figure.center;
@@ -67,8 +67,11 @@ impl Body {
             println!("velocity: {:?}", velocity);
             println!("projection: {:?}", projection);
 
-            // let mass_ratio = (2. * other.mass) / (self.mass + other.mass);
-            let mass_ratio = 2.; // mass of other object essentially infinite
+            let mass_ratio = if elastic {
+                (2. * other.mass) / (self.mass + other.mass)
+            } else {
+                2.
+            };
             self.velocity = self.velocity - (mass_ratio * projection);
             println!("new velocity: {:?}", self.velocity);
         }
