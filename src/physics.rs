@@ -36,6 +36,10 @@ impl BodyBuilder {
         Self::new(Shape::Circle { r })
     }
 
+    pub fn wall(o: Orientation, s: f64) -> Self {
+        Self::new(Shape::Wall { o, s })
+    }
+
     pub fn position(mut self, position: na::Point2<f64>) -> Self {
         self.body.figure.center = position;
         self
@@ -57,9 +61,10 @@ impl BodyBuilder {
 }
 
 impl Body {
-    fn collide(&mut self, other: &Body) {
+    fn collide(&mut self, delta: f64, other: &Body) {
         if self.figure.intersects(&other.figure) {
             // https://en.wikipedia.org/wiki/Elastic_collision#Two-dimensional
+            println!("collides with {:?}", other.figure.shape);
             let distance = self.figure.center - other.figure.center;
             let velocity = self.velocity - other.velocity;
             let projection = (velocity.dot(&distance) / distance.dot(&distance)) * distance;
@@ -69,7 +74,11 @@ impl Body {
             } else {
                 2.
             };
+            println!("old velocity {:?}", self.velocity);
+            println!("masss_ratio {:?}", mass_ratio);
+            println!("projection {:?}", projection);
             self.velocity = self.velocity - (mass_ratio * projection);
+            println!("new velocity {:?}", self.velocity);
         }
     }
 
@@ -79,8 +88,10 @@ impl Body {
 
     pub fn update(&mut self, delta: f64, collidables: &[&Body]) {
         for collidable in collidables {
-            self.collide(&collidable);
+            self.collide(delta, &collidable);
         }
+        println!("old position: {:?}", self.figure.center);
         self.figure.center += self.velocity * delta;
+        println!("new position: {:?}", self.figure.center);
     }
 }
