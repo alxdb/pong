@@ -1,4 +1,3 @@
-use futures::executor::block_on;
 use std::rc::Rc;
 
 use winit::{
@@ -8,16 +7,17 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use pong::graphics::Graphics;
+use pong::graphics::{self, Graphics};
 
 struct App {
     event_loop: EventLoop<()>,
     window: Rc<Window>,
     graphics: Graphics,
+    graphics_objects: Vec<graphics::Object>,
 }
 
 impl App {
-    async fn new() -> App {
+    pub fn new() -> App {
         let event_loop = EventLoop::new();
         let window = Rc::new(
             WindowBuilder::new()
@@ -27,15 +27,21 @@ impl App {
                 .build(&event_loop)
                 .unwrap(),
         );
-        let graphics = Graphics::new(window.clone()).await;
+        let graphics = Graphics::new(window.clone());
         App {
             event_loop,
             window,
             graphics,
+            graphics_objects: Vec::new(),
         }
     }
 
-    fn run(self) {
+    pub fn add_object(&mut self, descriptor: graphics::ObjectDescriptor) {
+        self.graphics_objects
+            .push(graphics::Object::new(&self.graphics, descriptor));
+    }
+
+    pub fn run(self) {
         self.event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
@@ -51,7 +57,7 @@ impl App {
                     }
                 }
                 Event::MainEventsCleared => {
-                    self.graphics.draw();
+                    self.graphics.draw(&self.graphics_objects);
                 }
                 _ => (),
             }
@@ -61,6 +67,7 @@ impl App {
 
 fn main() {
     env_logger::init();
-    let app = block_on(App::new());
+    let mut app = App::new();
+    app.add_object(graphics::ObjectDescriptor::circle(128, 0.5));
     app.run()
 }
