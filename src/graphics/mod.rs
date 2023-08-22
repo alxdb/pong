@@ -87,9 +87,9 @@ impl Graphics {
     ) -> wgpu::SurfaceConfiguration {
         let size = window.inner_size();
         let config = surface
-            .get_default_config(&adapter, size.width, size.height)
+            .get_default_config(adapter, size.width, size.height)
             .expect("Surface not supported by adapter");
-        surface.configure(&device, &config);
+        surface.configure(device, &config);
         config
     }
 
