@@ -18,7 +18,6 @@ pub mod utils {
 
 pub mod graphics;
 pub mod geometry {
-
     pub mod point {
         use std::ops;
 

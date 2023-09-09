@@ -1,4 +1,6 @@
+use nalgebra as na;
 use std::{ops::Range, rc::Rc};
+use wgpu::util::DeviceExt;
 
 use winit::window::Window;
 
@@ -15,6 +17,11 @@ pub struct ObjectDescriptor {
     vertices: Vec<Vertex>,
 }
 
+struct Uniforms {
+    buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+}
+
 pub struct Graphics {
     window: Rc<Window>,
     adapter: wgpu::Adapter,
@@ -22,6 +29,7 @@ pub struct Graphics {
     device: wgpu::Device,
     queue: wgpu::Queue,
     pipeline: wgpu::RenderPipeline,
+    uniforms: Uniforms,
 }
 
 impl Graphics {
@@ -46,7 +54,45 @@ impl Graphics {
         let surface_config = Self::configure_surface(&surface, &adapter, &device, &window);
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
-        let pipeline_layout = device.create_pipeline_layout(&Default::default());
+
+        let projection = shader::Uniforms {
+            proj: Self::projection(&surface_config),
+        };
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[projection]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: None,
+            layout: &uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            bind_group_layouts: &[&uniform_bind_group_layout],
+            ..Default::default()
+        });
+
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -76,6 +122,10 @@ impl Graphics {
             device,
             queue,
             pipeline,
+            uniforms: Uniforms {
+                buffer: uniform_buffer,
+                bind_group: uniform_bind_group,
+            },
         }
     }
 
@@ -93,8 +143,28 @@ impl Graphics {
         config
     }
 
-    pub fn configure(&self) {
-        Self::configure_surface(&self.surface, &self.adapter, &self.device, &self.window);
+    fn projection(surface_config: &wgpu::SurfaceConfiguration) -> [[f32; 4]; 4] {
+        let scale = 1000.;
+        let x = (surface_config.width as f64 / 2.) / scale;
+        let y = (surface_config.height as f64 / 2.) / scale;
+
+        na::Orthographic3::new(-x, x, -y, y, 1., -1.)
+            .as_matrix()
+            .cast::<f32>()
+            .into()
+    }
+
+    pub fn on_resize(&self) {
+        let config =
+            Self::configure_surface(&self.surface, &self.adapter, &self.device, &self.window);
+        let projection = shader::Uniforms {
+            proj: Self::projection(&config),
+        };
+        self.queue.write_buffer(
+            &self.uniforms.buffer,
+            0,
+            bytemuck::cast_slice(&[projection]),
+        );
     }
 
     pub fn draw<'a>(&self, objects: impl IntoIterator<Item = &'a Object>) {
@@ -115,11 +185,11 @@ impl Graphics {
                 ..Default::default()
             });
             pass.set_pipeline(&self.pipeline);
+            pass.set_bind_group(0, &self.uniforms.bind_group, &[]);
             for object in objects.into_iter() {
                 pass.set_vertex_buffer(0, object.vertex_buffer.slice(..));
                 pass.draw(object.vertices.clone(), 0..1);
             }
-            pass.draw(0..3, 0..1);
         }
 
         self.queue.submit(Some(encoder.finish()));
@@ -129,8 +199,6 @@ impl Graphics {
 
 impl Object {
     pub fn new(graphics: &Graphics, descriptor: ObjectDescriptor) -> Self {
-        use wgpu::util::DeviceExt;
-
         Object {
             vertex_buffer: graphics
                 .device

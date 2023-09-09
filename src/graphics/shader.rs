@@ -27,3 +27,9 @@ impl From<&[f64; 2]> for Vertex {
         }
     }
 }
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Uniforms {
+    pub proj: [[f32; 4]; 4],
+}

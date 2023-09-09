@@ -22,7 +22,7 @@ impl App {
         let window = Rc::new(
             WindowBuilder::new()
                 .with_title("Pong")
-                .with_resizable(false)
+                // .with_resizable(false)
                 .with_inner_size(LogicalSize::new(1920, 1080))
                 .build(&event_loop)
                 .unwrap(),
@@ -52,7 +52,7 @@ impl App {
                             log::info!("Exiting application");
                             control_flow.set_exit();
                         }
-                        WindowEvent::Resized(_) => self.graphics.configure(),
+                        WindowEvent::Resized(_) => self.graphics.on_resize(),
                         _ => (),
                     }
                 }
