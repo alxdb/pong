@@ -1,84 +1,12 @@
-use std::convert::identity;
-
-pub struct Renderer {
+pub struct RenderContext {
     window: winit::window::Window,
-    window_size: winit::dpi::PhysicalSize<u32>,
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Vertex {
-    position: [f32; 2],
-}
-
-impl Vertex {
-    const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
-    };
-
-    pub fn triangle() -> [Self; 3] {
-        [
-            Self {
-                position: [0.0, 0.5],
-            },
-            Self {
-                position: [-0.5, -0.5],
-            },
-            Self {
-                position: [0.5, -0.5],
-            },
-        ]
-    }
-}
-
-pub trait Renderable {
-    fn render_data(&self) -> &RenderData;
-    fn transform(&self) -> nalgebra::Matrix4<f32>;
-}
-
-// #[repr(C)]
-// #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-// struct PushConstants {
-//     transform: [[f32; 3]; 3],
-// }
-
-// impl PushConstants {
-//     fn new(transform: &nalgebra::Similarity2<f32>) -> Self {
-//         Self {
-//             transform: transform.to_homogeneous().into(),
-//         }
-//     }
-// }
-
-pub struct RenderData {
-    vertex_buffer: wgpu::Buffer,
-    n_vertices: u32,
-}
-
-impl RenderData {
-    pub fn new(renderer: &Renderer, vertices: &[Vertex]) -> Self {
-        use wgpu::util::DeviceExt;
-
-        Self {
-            vertex_buffer: renderer
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: bytemuck::cast_slice(vertices),
-                    usage: wgpu::BufferUsages::VERTEX,
-                }),
-            n_vertices: vertices.len() as u32,
-        }
-    }
-}
-
-impl Renderer {
+impl RenderContext {
     pub async fn new(window: winit::window::Window) -> Self {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
@@ -98,7 +26,7 @@ impl Renderer {
                 &wgpu::DeviceDescriptor {
                     features: wgpu::Features::PUSH_CONSTANTS,
                     limits: wgpu::Limits {
-                        max_push_constant_size: 128,
+                        max_push_constant_size: PushConstants::SIZE,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -107,20 +35,23 @@ impl Renderer {
             )
             .await
             .unwrap();
-        let window_size = window.inner_size();
-        let config = surface
-            .get_default_config(&adapter, window_size.width, window_size.height)
-            .unwrap();
-        surface.configure(&device, &config);
+
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 push_constant_ranges: &[wgpu::PushConstantRange {
                     stages: wgpu::ShaderStages::VERTEX,
-                    range: 0..std::mem::size_of::<[[f32; 4]; 4]>() as u32,
+                    range: 0..PushConstants::SIZE,
                 }],
                 ..Default::default()
             });
+
+        let window_size = window.inner_size();
+        let config = surface
+            .get_default_config(&adapter, window_size.width, window_size.height)
+            .unwrap();
+
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
@@ -139,9 +70,11 @@ impl Renderer {
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
+
+        surface.configure(&device, &config);
+
         Self {
             window,
-            window_size,
             surface,
             device,
             queue,
@@ -167,7 +100,7 @@ impl Renderer {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(clear_color),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 ..Default::default()
@@ -175,13 +108,13 @@ impl Renderer {
 
             render_pass.set_pipeline(&self.render_pipeline);
             for &renderable in renderables {
-                render_pass.set_vertex_buffer(0, renderable.render_data().vertex_buffer.slice(..));
+                render_pass.set_vertex_buffer(0, renderable.vertex_data().vertex_buffer.slice(..));
                 render_pass.set_push_constants(
                     wgpu::ShaderStages::VERTEX,
                     0,
-                    bytemuck::cast_slice(renderable.transform().as_slice()),
+                    bytemuck::bytes_of(&renderable.push_constants()),
                 );
-                render_pass.draw(0..renderable.render_data().n_vertices, 0..1);
+                render_pass.draw(0..renderable.vertex_data().n_vertices, 0..1);
             }
         }
 
@@ -190,4 +123,55 @@ impl Renderer {
 
         Ok(())
     }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Vertex {
+    pub position: [f32; 2],
+}
+
+impl Vertex {
+    const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
+    };
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct PushConstants {
+    pub transform: [[f32; 4]; 4],
+}
+
+impl PushConstants {
+    const SIZE: u32 = std::mem::size_of::<Self>() as u32;
+}
+
+pub struct VertexData {
+    vertex_buffer: wgpu::Buffer,
+    n_vertices: u32,
+}
+
+impl VertexData {
+    pub fn new(renderer: &RenderContext, vertices: &[Vertex]) -> Self {
+        use wgpu::util::DeviceExt;
+
+        Self {
+            vertex_buffer: renderer
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: None,
+                    contents: bytemuck::cast_slice(vertices),
+                    usage: wgpu::BufferUsages::VERTEX,
+                }),
+            n_vertices: vertices.len() as u32,
+        }
+    }
+}
+
+pub trait Renderable {
+    fn vertex_data(&self) -> &VertexData;
+    fn push_constants(&self) -> PushConstants;
 }
