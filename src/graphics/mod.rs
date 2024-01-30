@@ -55,9 +55,7 @@ impl Graphics {
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
-        let projection = shader::Uniforms {
-            proj: Self::projection(&surface_config),
-        };
+        let projection = Self::create_uniforms(&surface_config);
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[projection]),
@@ -154,12 +152,16 @@ impl Graphics {
             .into()
     }
 
+    fn create_uniforms(surface_config: &wgpu::SurfaceConfiguration) -> shader::Uniforms {
+        return shader::Uniforms {
+            proj: Self::projection(surface_config),
+        };
+    }
+
     pub fn on_resize(&self) {
         let config =
             Self::configure_surface(&self.surface, &self.adapter, &self.device, &self.window);
-        let projection = shader::Uniforms {
-            proj: Self::projection(&config),
-        };
+        let projection = Self::create_uniforms(&config);
         self.queue.write_buffer(
             &self.uniforms.buffer,
             0,

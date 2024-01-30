@@ -22,7 +22,7 @@ impl App {
         let window = Rc::new(
             WindowBuilder::new()
                 .with_title("Pong")
-                // .with_resizable(false)
+                .with_resizable(true)
                 .with_inner_size(LogicalSize::new(1920, 1080))
                 .build(&event_loop)
                 .unwrap(),
