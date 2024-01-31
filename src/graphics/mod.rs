@@ -1,5 +1,5 @@
 use nalgebra as na;
-use std::{ops::Range, rc::Rc};
+use std::{ops::Range, sync::Arc};
 use wgpu::util::DeviceExt;
 
 use winit::window::Window;
@@ -33,7 +33,7 @@ pub struct Graphics<'a> {
 }
 
 impl<'a> Graphics<'a> {
-    pub fn new(window: &Window) -> Graphics {
+    pub fn new(window: &'a Window) -> Graphics<'a> {
         use crate::utils::BlockFuture;
 
         let instance = wgpu::Instance::default();
@@ -57,14 +57,14 @@ impl<'a> Graphics<'a> {
 
         let projection = Self::create_uniforms(&surface_config);
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
+            label: Some("Uniform Buffer"),
             contents: bytemuck::cast_slice(&[projection]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: None,
+                label: Some("Uniform Bind Group Layout"),
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
@@ -78,7 +78,7 @@ impl<'a> Graphics<'a> {
             });
 
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
+            label: Some("Uniform Bind Group"),
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -87,6 +87,7 @@ impl<'a> Graphics<'a> {
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some(""),
             bind_group_layouts: &[&uniform_bind_group_layout],
             ..Default::default()
         });
