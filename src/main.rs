@@ -3,7 +3,7 @@ use std::rc::Rc;
 use winit::{
     dpi::LogicalSize,
     event::{Event, WindowEvent},
-    event_loop::EventLoop,
+    event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
@@ -11,23 +11,21 @@ use pong::graphics::{self, Graphics};
 
 struct App {
     event_loop: EventLoop<()>,
-    window: Rc<Window>,
-    graphics: Graphics,
+    window: Window,
+    graphics: Graphics<'_>,
     graphics_objects: Vec<graphics::Object>,
 }
 
 impl App {
     pub fn new() -> App {
-        let event_loop = EventLoop::new();
-        let window = Rc::new(
-            WindowBuilder::new()
-                .with_title("Pong")
-                .with_resizable(true)
-                .with_inner_size(LogicalSize::new(1920, 1080))
-                .build(&event_loop)
-                .unwrap(),
-        );
-        let graphics = Graphics::new(window.clone());
+        let event_loop = EventLoop::new().unwrap();
+        let window = WindowBuilder::new()
+            .with_title("Pong")
+            .with_resizable(true)
+            .with_inner_size(LogicalSize::new(1920, 1080))
+            .build(&event_loop)
+            .unwrap();
+        let graphics = Graphics::new(&window);
         App {
             event_loop,
             window,
@@ -42,26 +40,25 @@ impl App {
     }
 
     pub fn run(self) {
-        self.event_loop.run(move |event, _, control_flow| {
-            control_flow.set_poll();
-
-            match event {
+        self.event_loop.set_control_flow(ControlFlow::Poll);
+        self.event_loop
+            .run(move |event, elwt| match event {
                 Event::WindowEvent { event, window_id } if window_id == self.window.id() => {
                     match event {
                         WindowEvent::CloseRequested => {
                             log::info!("Exiting application");
-                            control_flow.set_exit();
+                            elwt.exit();
                         }
                         WindowEvent::Resized(_) => self.graphics.on_resize(),
                         _ => (),
                     }
                 }
-                Event::MainEventsCleared => {
+                Event::AboutToWait => {
                     self.graphics.draw(&self.graphics_objects);
                 }
                 _ => (),
-            }
-        })
+            })
+            .unwrap()
     }
 }
 

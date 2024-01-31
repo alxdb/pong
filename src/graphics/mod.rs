@@ -22,22 +22,22 @@ struct Uniforms {
     bind_group: wgpu::BindGroup,
 }
 
-pub struct Graphics {
-    window: Rc<Window>,
+pub struct Graphics<'a> {
+    window: &'a Window,
     adapter: wgpu::Adapter,
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'a>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     pipeline: wgpu::RenderPipeline,
     uniforms: Uniforms,
 }
 
-impl Graphics {
-    pub fn new(window: Rc<Window>) -> Graphics {
+impl<'a> Graphics<'a> {
+    pub fn new(window: &Window) -> Graphics {
         use crate::utils::BlockFuture;
 
         let instance = wgpu::Instance::default();
-        let surface = unsafe { instance.create_surface(window.as_ref()) }.unwrap();
+        let surface = instance.create_surface(window).unwrap();
 
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -51,7 +51,7 @@ impl Graphics {
             .block()
             .unwrap();
 
-        let surface_config = Self::configure_surface(&surface, &adapter, &device, &window);
+        let surface_config = Self::configure_surface(&surface, &adapter, &device, window);
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
@@ -153,14 +153,14 @@ impl Graphics {
     }
 
     fn create_uniforms(surface_config: &wgpu::SurfaceConfiguration) -> shader::Uniforms {
-        return shader::Uniforms {
+        shader::Uniforms {
             proj: Self::projection(surface_config),
-        };
+        }
     }
 
     pub fn on_resize(&self) {
         let config =
-            Self::configure_surface(&self.surface, &self.adapter, &self.device, &self.window);
+            Self::configure_surface(&self.surface, &self.adapter, &self.device, self.window);
         let projection = Self::create_uniforms(&config);
         self.queue.write_buffer(
             &self.uniforms.buffer,
@@ -169,7 +169,7 @@ impl Graphics {
         );
     }
 
-    pub fn draw<'a>(&self, objects: impl IntoIterator<Item = &'a Object>) {
+    pub fn draw<'b>(&self, objects: impl IntoIterator<Item = &'b Object>) {
         let frame = self.surface.get_current_texture().unwrap();
         let view = frame.texture.create_view(&Default::default());
 
@@ -181,7 +181,7 @@ impl Graphics {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 ..Default::default()
