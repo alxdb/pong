@@ -1,0 +1,27 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 28,
+        "patch": 1
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Configuration",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_FLAGS": "-stdlib=libc++ -lc++abi"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        }
+    ]
+}
