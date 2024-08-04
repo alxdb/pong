@@ -1,45 +1,57 @@
 use bevy::prelude::*;
-use derive_more::*;
 
 fn main() {
-    App::new().add_plugins((DefaultPlugins, HelloPlugin)).run();
+    App::new()
+        .add_plugins((DefaultPlugins, plugins::hello::HelloPlugin))
+        .run();
 }
 
-#[derive(Resource)]
-struct GreetTimer(Timer);
+mod plugins {
+    pub(crate) mod hello {
+        use bevy::prelude::*;
+        use derive_more::*;
 
-#[derive(Component)]
-struct Person;
+        pub struct HelloPlugin;
 
-#[derive(Component, Display)]
-struct Name(String);
+        #[derive(Resource)]
+        struct GreetTimer(Timer);
 
-pub struct HelloPlugin;
+        #[derive(Component)]
+        struct Person;
 
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-            .add_systems(Startup, add_people)
-            .add_systems(Update, (update_people, greet_people).chain());
-    }
-}
+        #[derive(Component, Display)]
+        struct Name(&'static str);
 
-fn add_people(mut commands: Commands) {
-    commands.spawn((Person, Name("Elaina Proctor".into())));
-    commands.spawn((Person, Name("Jeoffry Lanister".into())));
-    commands.spawn((Person, Name("Stanza Stark".into())));
-}
-
-fn greet_people(time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in &query {
-            println!("hello {}!", name);
+        impl Plugin for HelloPlugin {
+            fn build(&self, app: &mut App) {
+                app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
+                    .add_systems(Startup, add_people)
+                    .add_systems(Update, (update_people, greet_people).chain());
+            }
         }
-    }
-}
 
-fn update_people(mut query: Query<&mut Name, With<Person>>) {
-    if let Some(mut name) = query.iter_mut().find(|name| name.0 == "Stanza Stark") {
-        name.0 = "Stanza Lanister".into();
+        fn add_people(mut commands: Commands) {
+            commands.spawn((Person, Name("Elaina Proctor")));
+            commands.spawn((Person, Name("Jeoffry Lanister")));
+            commands.spawn((Person, Name("Stanza Stark")));
+        }
+
+        fn update_people(mut query: Query<&mut Name, With<Person>>) {
+            if let Some(mut name) = query.iter_mut().find(|name| name.0 == "Stanza Stark") {
+                name.0 = "Stanza Lanister".into();
+            }
+        }
+
+        fn greet_people(
+            time: Res<Time>,
+            mut timer: ResMut<GreetTimer>,
+            query: Query<&Name, With<Person>>,
+        ) {
+            if timer.0.tick(time.delta()).just_finished() {
+                for name in &query {
+                    println!("hello {}!", name);
+                }
+            }
+        }
     }
 }
