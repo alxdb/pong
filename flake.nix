@@ -18,27 +18,31 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        toolchain = fenix.packages.${system}.default;
+        fenixPkgs = fenix.packages.${system};
       in
       {
-        devShell = pkgs.mkShell rec {
-          nativeBuildInputs = [
-            (toolchain.withComponents [
-              "cargo"
-              "clippy"
-              "rustc"
-              "rustfmt"
-            ])
-            pkgs.wayland
-            pkgs.libxkbcommon
-            pkgs.alsa-lib
-            pkgs.pkg-config
-            pkgs.systemd
-            pkgs.vulkan-headers
-            pkgs.vulkan-loader
-            pkgs.vulkan-validation-layers
-          ];
-          LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath nativeBuildInputs}";
+        devShells = {
+          default = pkgs.mkShell rec {
+            nativeBuildInputs = [
+              (fenixPkgs.default.withComponents [
+                "cargo"
+                "clippy"
+                "rustc"
+                "rustfmt"
+              ])
+              fenixPkgs.rust-analyzer
+              pkgs.wayland
+              pkgs.libxkbcommon
+              pkgs.alsa-lib
+              pkgs.pkg-config
+              pkgs.systemd
+              pkgs.vulkan-headers
+              pkgs.vulkan-loader
+              pkgs.vulkan-validation-layers
+            ];
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath nativeBuildInputs}";
+            XCURSOR_THEME = "Adwaita";
+          };
         };
       }
     );

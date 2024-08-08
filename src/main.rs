@@ -2,56 +2,39 @@ use bevy::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, plugins::hello::HelloPlugin))
+        .add_plugins(DefaultPlugins)
+        .add_plugins(plugins::ShapesPlugin)
         .run();
 }
 
 mod plugins {
-    pub(crate) mod hello {
-        use bevy::prelude::*;
-        use derive_more::*;
+    pub use shapes::ShapesPlugin;
 
-        pub struct HelloPlugin;
+    pub(crate) mod shapes {
+        use bevy::{
+            prelude::*,
+            sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+        };
 
-        #[derive(Resource)]
-        struct GreetTimer(Timer);
+        pub struct ShapesPlugin;
 
-        #[derive(Component)]
-        struct Person;
-
-        #[derive(Component, Display)]
-        struct Name(&'static str);
-
-        impl Plugin for HelloPlugin {
+        impl Plugin for ShapesPlugin {
             fn build(&self, app: &mut App) {
-                app.insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-                    .add_systems(Startup, add_people)
-                    .add_systems(Update, (update_people, greet_people).chain());
+                app.add_systems(Startup, add_shapes);
             }
         }
 
-        fn add_people(mut commands: Commands) {
-            commands.spawn((Person, Name("Elaina Proctor")));
-            commands.spawn((Person, Name("Jeoffry Lanister")));
-            commands.spawn((Person, Name("Stanza Stark")));
-        }
-
-        fn update_people(mut query: Query<&mut Name, With<Person>>) {
-            if let Some(mut name) = query.iter_mut().find(|name| name.0 == "Stanza Stark") {
-                name.0 = "Stanza Lanister".into();
-            }
-        }
-
-        fn greet_people(
-            time: Res<Time>,
-            mut timer: ResMut<GreetTimer>,
-            query: Query<&Name, With<Person>>,
+        fn add_shapes(
+            mut commands: Commands,
+            mut meshes: ResMut<Assets<Mesh>>,
+            mut materials: ResMut<Assets<ColorMaterial>>,
         ) {
-            if timer.0.tick(time.delta()).just_finished() {
-                for name in &query {
-                    println!("hello {}!", name);
-                }
-            }
+            commands.spawn(Camera2dBundle::default());
+            commands.spawn(MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(meshes.add(Circle { radius: 50.0 })),
+                material: materials.add(Color::WHITE),
+                ..default()
+            });
         }
     }
 }
