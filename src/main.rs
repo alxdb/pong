@@ -1,11 +1,25 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowMode};
 
 mod config;
+use config::Config;
 
 fn main() {
+    let config = Config::default();
+
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Pong".into(),
+                name: Some("Bevy Pong".into()),
+                resolution: config.arena_size.into(),
+                resizable: false,
+                mode: WindowMode::Fullscreen,
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugins(plugins::BasePlugin)
+        .insert_resource(config)
         .run();
 }
 
@@ -39,8 +53,8 @@ mod plugins {
         impl BallBundle {
             fn new(
                 config: &Config,
-                meshes: &mut ResMut<Assets<Mesh>>,
-                materials: &mut ResMut<Assets<ColorMaterial>>,
+                meshes: &mut Assets<Mesh>,
+                materials: &mut Assets<ColorMaterial>,
             ) -> Self {
                 BallBundle {
                     ball: Ball,
@@ -56,21 +70,57 @@ mod plugins {
             }
         }
 
+        #[derive(Copy, Clone)]
+        enum PaddleSide {
+            Left,
+            Right,
+        }
+
         #[derive(Component)]
-        struct Paddle;
+        struct Paddle(PaddleSide);
 
         #[derive(Bundle)]
         struct PaddleBundle {
             paddle: Paddle,
+            collider: Collider,
             sprite: SpriteBundle,
+        }
+
+        impl PaddleBundle {
+            fn new(config: &Config, side: PaddleSide) -> Self {
+                let distance_from_center = (config.arena_size.0 / 2.) - config.paddle.size.0;
+
+                PaddleBundle {
+                    paddle: Paddle(side),
+                    collider: Collider,
+                    sprite: SpriteBundle {
+                        sprite: Sprite {
+                            color: config.paddle.color,
+                            ..default()
+                        },
+                        transform: Transform {
+                            translation: Vec3::new(
+                                match side {
+                                    PaddleSide::Left => -distance_from_center,
+                                    PaddleSide::Right => distance_from_center,
+                                },
+                                0.,
+                                0.,
+                            ),
+                            scale: Vec3::new(config.paddle.size.0, config.paddle.size.1, 0.),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                }
+            }
         }
 
         pub struct BasePlugin;
 
         impl Plugin for BasePlugin {
             fn build(&self, app: &mut App) {
-                app.insert_resource(Config::default())
-                    .add_systems(Startup, setup)
+                app.add_systems(Startup, setup)
                     .add_systems(FixedUpdate, apply_velocity);
             }
         }
@@ -83,6 +133,9 @@ mod plugins {
         ) {
             commands.spawn(Camera2dBundle::default());
             commands.spawn(BallBundle::new(&config, &mut meshes, &mut materials));
+            for side in [PaddleSide::Left, PaddleSide::Right] {
+                commands.spawn(PaddleBundle::new(&config, side));
+            }
         }
 
         fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
